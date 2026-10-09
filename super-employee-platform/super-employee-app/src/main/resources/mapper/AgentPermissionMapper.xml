@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiwei.superemployee.app.permission.mapper.AgentPermissionMapper">
+
+    <select id="selectTools" resultType="java.util.HashMap">
+        SELECT p.id, p.agent_id AS agentId, p.tool_id AS toolId, t.tool_code AS toolCode,
+               t.tool_name AS toolName, t.risk_level AS riskLevel, p.timeout_seconds AS timeoutSeconds,
+               p.daily_limit AS dailyLimit, p.enabled
+        FROM agent_tool_permission p
+        JOIN managed_tool t ON p.tool_id = t.id
+        WHERE p.agent_id = #{agentId}
+        ORDER BY t.tool_name
+    </select>
+
+    <select id="selectResources" resultType="java.util.HashMap">
+        SELECT p.id, p.agent_id AS agentId, p.resource_type AS resourceType, p.resource_id AS resourceId,
+               p.access_level AS accessLevel, p.enabled,
+               COALESCE(h.host_name, a.app_name, d.instance_name) AS resourceName,
+               COALESCE(h.environment, d.environment, '-') AS resourceEnvironment
+        FROM agent_resource_permission p
+        LEFT JOIN managed_host h ON p.resource_type = 'HOST' AND p.resource_id = h.id
+        LEFT JOIN managed_application a ON p.resource_type = 'APPLICATION' AND p.resource_id = a.id
+        LEFT JOIN managed_database d ON p.resource_type = 'DATABASE' AND p.resource_id = d.id
+        WHERE p.agent_id = #{agentId}
+        ORDER BY p.resource_type, resourceName
+    </select>
+
+    <select id="selectPolicy" resultType="java.util.HashMap">
+        SELECT id, agent_id AS agentId, auto_approve_max_risk AS autoApproveMaxRisk,
+               production_requires_approval AS productionRequiresApproval,
+               high_risk_requires_approval AS highRiskRequiresApproval,
+               credential_access_enabled AS credentialAccessEnabled
+        FROM agent_approval_policy WHERE agent_id = #{agentId}
+    </select>
+
+    <delete id="deleteTools">DELETE FROM agent_tool_permission WHERE agent_id = #{agentId}</delete>
+    <delete id="deleteResources">DELETE FROM agent_resource_permission WHERE agent_id = #{agentId}</delete>
+    <delete id="deletePolicy">DELETE FROM agent_approval_policy WHERE agent_id = #{agentId}</delete>
+
+    <insert id="insertTool">
+        INSERT INTO agent_tool_permission(id, agent_id, tool_id, timeout_seconds, daily_limit, enabled, created_at, updated_at)
+        VALUES (#{id}, #{agentId}, #{toolId}, #{timeoutSeconds}, #{dailyLimit}, #{enabled}, #{now}, #{now})
+    </insert>
+
+    <insert id="insertResource">
+        INSERT INTO agent_resource_permission(id, agent_id, resource_type, resource_id, access_level, enabled, created_at, updated_at)
+        VALUES (#{id}, #{agentId}, #{resourceType}, #{resourceId}, #{accessLevel}, #{enabled}, #{now}, #{now})
+    </insert>
+
+    <insert id="insertPolicy">
+        INSERT INTO agent_approval_policy(id, agent_id, auto_approve_max_risk, production_requires_approval,
+            high_risk_requires_approval, credential_access_enabled, created_at, updated_at)
+        VALUES (#{id}, #{agentId}, #{autoApproveMaxRisk}, #{productionRequiresApproval},
+            #{highRiskRequiresApproval}, #{credentialAccessEnabled}, #{now}, #{now})
+    </insert>
+</mapper>

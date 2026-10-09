@@ -1,0 +1,45 @@
+spring:
+  config:
+    # 相对进程工作目录；私有文件不进入 Git 或 JAR。
+    import: "file:./local-config/application-private.yml"
+    activate:
+      on-profile: dev
+
+agentscope:
+  dashscope:
+    model-name: ${DASHSCOPE_MODEL:qwen-plus}
+    stream: true
+
+super-employee:
+  web:
+    allowed-origin-patterns: ${WEB_ORIGIN:http://localhost:*,http://127.0.0.1:*}
+  persistence:
+    enabled: true
+  # 开发环境默认开启整套自治流程（可用环境变量覆盖关闭）。
+  model:
+    enabled: ${AI_ENABLED:true}
+  react:
+    enabled: ${REACT_ENABLED:true}
+    max-model-calls: ${REACT_MAX_MODEL_CALLS:8}
+  ssh:
+    # 开发环境默认开启 SSH 只读诊断；密码仅保存于资源中心的加密 SSH 凭据中。
+    enabled: ${SSH_DIAGNOSTIC_ENABLED:true}
+    # 格式：资源中心主机 ID=SHA256:指纹；同一主机的多个已核验指纹以 | 分隔。
+    # 主机上若已配置 hostKeyFingerprints 列表，将优先使用主机字段。
+  tools:
+    # 本地 Maven 验证/部署候选；工作区默认取启动目录（须含 pom.xml）。
+    enabled: ${TOOLS_ENABLED:true}
+    working-directory: ${MAVEN_WORKSPACE:${user.dir}}
+    verification-command: ${MAVEN_VERIFY_COMMAND:mvn test}
+    # 开发环境用 mvn verify 作为受控部署候选命令（仍需人工审批）；生产请改为真实部署流水线并收紧白名单。
+    deployment-command: ${MAVEN_DEPLOY_COMMAND:mvn verify}
+    allowed-commands: "mvn,mvn.cmd"
+    timeout-seconds: ${TOOLS_TIMEOUT_SECONDS:300}
+  codex:
+    # 与 Maven 工作区共用；须已安装 Codex CLI 且能执行 codex --version。
+    enabled: ${CODEX_REPAIR_ENABLED:true}
+    executable: ${CODEX_CLI_EXECUTABLE:codex}
+    workspace: ${CODEX_WORKSPACE:${MAVEN_WORKSPACE:${user.dir}}}
+    timeout-seconds: ${CODEX_TIMEOUT_SECONDS:300}
+  security:
+    token-validity-seconds: 28800

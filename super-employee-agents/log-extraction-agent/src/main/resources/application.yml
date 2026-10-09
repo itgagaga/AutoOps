@@ -1,0 +1,21 @@
+﻿server:
+  port: 8101
+
+spring:
+  config:
+    import: "file:./local-config/application-private.yml"
+  application:
+    name: log-extraction-agent
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+zhiwei:
+  agent:
+    id: 00000000-0000-0000-0000-000000000401
+    code: LOG_EXTRACTION
+    heartbeat-interval-ms: 15000
+    heartbeat-enabled: true

@@ -1,0 +1,12 @@
+# Copy to local-config/application-private.yml in the process working directory.
+# Fill locally; never commit the private file or real values in this template.
+spring:
+  datasource:
+    url: ""
+    username: ""
+    password: ""
+builder:
+  jwt:
+    secret: ""
+  dashscope:
+    api-key: ""

@@ -1,0 +1,21 @@
+-- 达梦数据库增量脚本：Agent工具授权、资源范围、审批策略与凭据使用日志。仅执行一次。
+CREATE TABLE agent_tool_permission (id VARCHAR(64) PRIMARY KEY, agent_id VARCHAR(64) NOT NULL, tool_id VARCHAR(64) NOT NULL, timeout_seconds INTEGER NOT NULL, daily_limit INTEGER NOT NULL, enabled INTEGER NOT NULL, created_at VARCHAR(64) NOT NULL, updated_at VARCHAR(64) NOT NULL, UNIQUE(agent_id,tool_id));
+CREATE TABLE agent_resource_permission (id VARCHAR(64) PRIMARY KEY, agent_id VARCHAR(64) NOT NULL, resource_type VARCHAR(32) NOT NULL, resource_id VARCHAR(64) NOT NULL, access_level VARCHAR(16) NOT NULL, enabled INTEGER NOT NULL, created_at VARCHAR(64) NOT NULL, updated_at VARCHAR(64) NOT NULL, UNIQUE(agent_id,resource_type,resource_id));
+CREATE TABLE agent_approval_policy (id VARCHAR(64) PRIMARY KEY, agent_id VARCHAR(64) NOT NULL UNIQUE, auto_approve_max_risk VARCHAR(16) NOT NULL, production_requires_approval INTEGER NOT NULL, high_risk_requires_approval INTEGER NOT NULL, credential_access_enabled INTEGER NOT NULL, created_at VARCHAR(64) NOT NULL, updated_at VARCHAR(64) NOT NULL);
+CREATE TABLE credential_usage_log (id VARCHAR(64) PRIMARY KEY, event_time VARCHAR(64) NOT NULL, agent_id VARCHAR(64) NOT NULL, credential_id VARCHAR(64) NOT NULL, resource_type VARCHAR(32), resource_id VARCHAR(64), action_name VARCHAR(64) NOT NULL, result_status VARCHAR(32) NOT NULL, detail VARCHAR(1000));
+CREATE INDEX idx_agent_tool_permission_agent ON agent_tool_permission(agent_id);
+CREATE INDEX idx_agent_resource_permission_agent ON agent_resource_permission(agent_id);
+CREATE INDEX idx_credential_usage_time ON credential_usage_log(event_time);
+COMMENT ON TABLE agent_tool_permission IS 'Agent工具授权表';
+COMMENT ON COLUMN agent_tool_permission.daily_limit IS '每日最大调用次数';
+COMMENT ON TABLE agent_resource_permission IS 'Agent资源访问授权表';
+COMMENT ON COLUMN agent_resource_permission.access_level IS '访问级别：READ、EXECUTE、ADMIN';
+COMMENT ON TABLE agent_approval_policy IS 'Agent审批安全策略表';
+COMMENT ON COLUMN agent_approval_policy.auto_approve_max_risk IS '可自动执行的最高风险级别';
+COMMENT ON COLUMN agent_approval_policy.production_requires_approval IS '生产环境是否强制审批';
+COMMENT ON COLUMN agent_approval_policy.high_risk_requires_approval IS '高风险和严重风险强制审批，后端固定为1';
+COMMENT ON COLUMN agent_approval_policy.credential_access_enabled IS '是否允许工具临时使用凭据';
+COMMENT ON TABLE credential_usage_log IS '凭据使用审计日志表';
+INSERT INTO app_menu(id,parent_id,menu_code,menu_name,route_path,icon_name,sort_order,enabled) SELECT '00000000-0000-0000-0000-000000000340','00000000-0000-0000-0000-000000000300','AGENT_AUTHORIZATION','授权策略','/agents/authorization','Shield',24,1 FROM dual WHERE NOT EXISTS(SELECT 1 FROM app_menu WHERE menu_code='AGENT_AUTHORIZATION');
+INSERT INTO app_role_menu(role_id,menu_id) SELECT r.id,m.id FROM app_role r CROSS JOIN app_menu m WHERE r.role_code='ADMIN' AND m.menu_code='AGENT_AUTHORIZATION' AND NOT EXISTS(SELECT 1 FROM app_role_menu rm WHERE rm.role_id=r.id AND rm.menu_id=m.id);
+COMMIT;

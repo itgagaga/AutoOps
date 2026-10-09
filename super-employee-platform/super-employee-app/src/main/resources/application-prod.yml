@@ -1,0 +1,21 @@
+spring:
+  config:
+    import: "file:./local-config/application-private.yml"
+    activate:
+      on-profile: prod
+
+agentscope:
+  dashscope:
+    model-name: ${DASHSCOPE_MODEL:qwen-plus}
+    stream: true
+
+super-employee:
+  persistence:
+    enabled: true
+  model:
+    enabled: ${AI_ENABLED:true}
+  ssh:
+    # 生产环境必须显式开启，并通过部署环境注入已核验的主机密钥指纹。
+    enabled: ${SSH_DIAGNOSTIC_ENABLED:false}
+  security:
+    token-validity-seconds: ${JWT_VALIDITY_SECONDS:28800}

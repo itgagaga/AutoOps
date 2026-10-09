@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiwei.superemployee.app.auth.mapper.AppMenuMapper">
+    <select id="selectEnabledByRoleCode" resultType="com.zhiwei.superemployee.app.auth.mapper.AppMenuEntity">
+        SELECT m.id, m.parent_id, m.menu_code, m.menu_name, m.route_path, m.icon_name, m.sort_order, m.enabled
+        FROM app_menu m
+        JOIN app_role_menu rm ON rm.menu_id = m.id
+        JOIN app_role r ON r.id = rm.role_id
+        WHERE r.role_code = #{roleCode} AND r.enabled = 1 AND m.enabled = 1
+        ORDER BY m.sort_order, m.menu_code
+    </select>
+</mapper>

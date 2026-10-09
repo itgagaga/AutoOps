@@ -1,0 +1,14 @@
+﻿server:
+  port: 8103
+
+spring:
+  config:
+    import: "file:./local-config/application-private.yml"
+  application:
+    name: code-repair-agent
+
+zhiwei:
+  agent:
+    id: 00000000-0000-0000-0000-000000000403
+    code: CODE_REPAIR
+    heartbeat-interval-ms: 15000

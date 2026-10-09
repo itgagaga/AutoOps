@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiwei.superemployee.app.dict.mapper.DictItemMapper">
+    <select id="selectEnabledByTypeCode" resultType="com.zhiwei.superemployee.app.dict.mapper.DictItemEntity">
+        SELECT i.id, i.type_id, i.item_code, i.item_label, i.item_value, i.css_type, i.sort_order,
+               i.enabled, i.created_at, i.updated_at
+        FROM app_dict_item i
+        JOIN app_dict_type t ON t.id = i.type_id
+        WHERE t.type_code = #{typeCode} AND t.enabled = 1 AND i.enabled = 1
+        ORDER BY i.sort_order, i.item_code
+    </select>
+</mapper>

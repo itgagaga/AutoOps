@@ -1,0 +1,7 @@
+# 复制到每个独立 Agent 进程工作目录的 local-config/application-private.yml。
+# 真实文件不能提交，也不要放入 src/main/resources。
+zhiwei:
+  agent:
+    platform-base-url: ""
+    # 必须与平台 super-employee.agents.shared-token 一致。
+    shared-token: ""

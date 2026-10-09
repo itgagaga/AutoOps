@@ -1,0 +1,20 @@
+spring:
+  config:
+    import: "file:./local-config/application-private.yml"
+    activate:
+      on-profile: oracle
+  datasource:
+    # 连接串、账号和密码由本地 application-private.yml 提供。
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      connection-timeout: 30000
+      validation-timeout: 5000
+  sql:
+    init:
+      mode: never
+
+super-employee:
+  persistence:
+    enabled: true

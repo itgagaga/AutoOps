@@ -1,0 +1,32 @@
+# 复制到进程工作目录的 local-config/application-private.yml 后填写。
+# 真实文件已加入 .gitignore；不要放入 src/main/resources 或打包进 JAR。
+# 本模板只能保留空值，不能写入真实连接信息或密钥后提交。
+spring:
+  datasource:
+    url: ""
+    username: ""
+    password: ""
+
+agentscope:
+  dashscope:
+    api-key: ""
+
+super-employee:
+  security:
+    # 至少 32 字节的随机字符串。
+    jwt-secret: ""
+    # 独立随机密钥；更换前须处理已有凭据密文。
+    credential-encryption-key: ""
+    initial-admin:
+      username: ""
+      password: ""
+      display-name: ""
+  agents:
+    shared-token: ""
+  ssh:
+    host-key-fingerprints: ""
+  cursor:
+    # 可留空并使用 CLI 登录态。
+    api-key: ""
+  claude:
+    api-key: ""

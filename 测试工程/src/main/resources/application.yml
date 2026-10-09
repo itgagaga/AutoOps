@@ -1,0 +1,27 @@
+server:
+  port: 18080
+
+spring:
+  application:
+    name: demo-ops-app
+
+# 缺陷演练：定时自动触发若干常见错误，便于智维平台拉取日志后判异常
+demo:
+  fault-injector:
+    enabled: true
+    # 首次延迟与周期（秒）
+    initial-delay-seconds: 15
+    interval-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  file:
+    name: logs/demo-ops-app.log
+  level:
+    root: INFO
+    com.demo.opsapp: INFO

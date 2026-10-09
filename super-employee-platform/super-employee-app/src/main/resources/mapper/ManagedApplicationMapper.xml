@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiwei.superemployee.app.resource.mapper.ManagedApplicationMapper">
+    <select id="selectAllWithHostName" resultType="com.zhiwei.superemployee.app.resource.mapper.ManagedApplicationEntity">
+        SELECT a.*, h.host_name AS host_name
+        FROM managed_application a
+        LEFT JOIN managed_host h ON a.host_id = h.id
+        ORDER BY a.app_name, a.app_code
+    </select>
+    <select id="selectByIdWithHostName" resultType="com.zhiwei.superemployee.app.resource.mapper.ManagedApplicationEntity">
+        SELECT a.*, h.host_name AS host_name
+        FROM managed_application a
+        LEFT JOIN managed_host h ON a.host_id = h.id
+        WHERE a.id = #{id}
+    </select>
+</mapper>

@@ -1,0 +1,14 @@
+﻿server:
+  port: 8104
+
+spring:
+  config:
+    import: "file:./local-config/application-private.yml"
+  application:
+    name: test-verification-agent
+
+zhiwei:
+  agent:
+    id: 00000000-0000-0000-0000-000000000404
+    code: TEST_VERIFICATION
+    heartbeat-interval-ms: 15000

@@ -1,0 +1,157 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: super-employee-app
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 210MB
+  sql:
+    init:
+      encoding: UTF-8
+  profiles:
+    default: dev
+    group:
+      dev: dameng
+      prod: dameng
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level ${PID:-} --- [%thread] [%X{requestId:-system}] %logger{40} : %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: input
+      table-underline: true
+
+super-employee:
+  security:
+    captcha:
+      # RANDOM / ALPHANUMERIC / ARITHMETIC / SLIDER
+      type: ${CAPTCHA_TYPE:RANDOM}
+      ttl-seconds: ${CAPTCHA_TTL_SECONDS:120}
+      max-attempts: ${CAPTCHA_MAX_ATTEMPTS:5}
+      max-active: ${CAPTCHA_MAX_ACTIVE:10000}
+      max-issues-per-minute: ${CAPTCHA_MAX_ISSUES_PER_MINUTE:30}
+    login:
+      max-failures: ${LOGIN_MAX_FAILURES:5}
+      window-seconds: ${LOGIN_FAILURE_WINDOW_SECONDS:300}
+      lock-seconds: ${LOGIN_LOCK_SECONDS:600}
+  web:
+    allowed-origin-patterns: ${WEB_ORIGIN:http://localhost:5173}
+  workflow:
+    default-timeout-seconds: 300
+  react:
+    enabled: ${REACT_ENABLED:${AI_ENABLED:false}}
+    max-model-calls: ${REACT_MAX_MODEL_CALLS:8}
+  recovery:
+    lease-seconds: ${AGENT_LEASE_SECONDS:120}
+    heartbeat-seconds: ${AGENT_HEARTBEAT_SECONDS:30}
+    scan-interval-ms: ${AGENT_RECOVERY_SCAN_MS:30000}
+    batch-size: ${AGENT_RECOVERY_BATCH_SIZE:10}
+    max-attempts: ${AGENT_MAX_ATTEMPTS:3}
+    model-timeout-seconds: ${AGENT_MODEL_TIMEOUT_SECONDS:120}
+    initial-backoff-seconds: ${AGENT_RETRY_INITIAL_SECONDS:2}
+    max-backoff-seconds: ${AGENT_RETRY_MAX_SECONDS:30}
+  agent:
+    # 列表运行状态自动探测间隔；独立 Agent 超时未上报则离线。
+    heartbeat-interval-ms: ${AGENT_STATUS_HEARTBEAT_MS:15000}
+    heartbeat-stale-seconds: ${AGENT_STATUS_STALE_SECONDS:90}
+  agents:
+    # 四个内置 Agent 默认随主项目启动并在进程内调用，无需单独启动 8101-8104 服务。
+    local-enabled: ${LOCAL_SPECIALIST_AGENTS_ENABLED:true}
+    # 仅供以后接入真正的远程扩展 Agent 使用。
+    invoke-timeout-seconds: ${AGENT_INVOKE_TIMEOUT_SECONDS:120}
+  ssh:
+    # 生产环境必须显式开启，并为每个主机配置 SHA-256 主机密钥指纹。
+    enabled: ${SSH_DIAGNOSTIC_ENABLED:false}
+    connect-timeout-seconds: ${SSH_CONNECT_TIMEOUT_SECONDS:10}
+    # 周期拉日志常遇大文件；过短会导致「主机能通但 Timeout expired: 20000ms」。
+    command-timeout-seconds: ${SSH_COMMAND_TIMEOUT_SECONDS:60}
+    max-output-chars: ${SSH_MAX_OUTPUT_CHARS:128000}
+    max-log-lines: ${SSH_MAX_LOG_LINES:500}
+    max-since-minutes: ${SSH_MAX_SINCE_MINUTES:1440}
+    # 格式：主机 ID=SHA256 指纹，多个主机以英文逗号分隔。
+  db:
+    connect-timeout-seconds: ${DB_CONNECT_TIMEOUT_SECONDS:10}
+    query-timeout-seconds: ${DB_QUERY_TIMEOUT_SECONDS:30}
+    max-result-rows: ${DB_MAX_RESULT_ROWS:500}
+  git:
+    timeout-seconds: ${GIT_TOOL_TIMEOUT_SECONDS:60}
+  ops-log:
+    # 运维任务周期拉日志：落盘到工作区 .zhiwei-logs/，异常时再触发分析。
+    enabled: ${OPS_LOG_SCHEDULE_ENABLED:true}
+    initial-delay-ms: ${OPS_LOG_INITIAL_DELAY_MS:5000}
+    scan-interval-ms: ${OPS_LOG_SCAN_MS:60000}
+    # 扫描线程只提交任务；拉取、分析、审批恢复在隔离工作线程中运行。
+    worker-threads: ${OPS_LOG_WORKER_THREADS:4}
+    max-lines: ${OPS_LOG_MAX_LINES:500}
+    # 每小时清理冗余日志；同时受保留天数、单任务文件数和容量限制。
+    cleanup-cron: "${OPS_LOG_CLEANUP_CRON:0 15 * * * *}"
+    retain-days: ${OPS_LOG_RETAIN_DAYS:7}
+    max-files-per-task: ${OPS_LOG_MAX_FILES_PER_TASK:500}
+    max-bytes-per-task: ${OPS_LOG_MAX_BYTES_PER_TASK:1073741824}
+    anomaly-min-errors: ${OPS_LOG_ANOMALY_MIN_ERRORS:3}
+    anomaly-growth-ratio: ${OPS_LOG_ANOMALY_GROWTH_RATIO:1.5}
+  tools:
+    enabled: false
+    verification-command: ""
+    deployment-command: ""
+    deployment-timeout-seconds: ${JAVA_DEPLOYMENT_TIMEOUT_SECONDS:180}
+    working-directory: ""
+    # 仅允许在包含 pom.xml 的本地工作区执行 Maven test 或 verify。
+    allowed-commands: "mvn,mvn.cmd"
+  codex:
+    # 必须显式启用；仅允许在包含 pom.xml 的本地工作区中执行。
+    enabled: ${CODEX_REPAIR_ENABLED:true}
+    executable: ${CODEX_CLI_EXECUTABLE:codex}
+    workspace: ${CODEX_WORKSPACE:}
+    timeout-seconds: ${CODEX_TIMEOUT_SECONDS:300}
+    install-timeout-seconds: ${CODEX_INSTALL_TIMEOUT_SECONDS:600}
+    login-timeout-seconds: ${CODEX_LOGIN_TIMEOUT_SECONDS:600}
+  cursor:
+    # Cursor CLI（agent）本地修复；与 CodeX/Claude 可同时启用，由 repair.engine 选择实际调用方。
+    enabled: ${CURSOR_REPAIR_ENABLED:true}
+    executable: ${CURSOR_CLI_EXECUTABLE:agent}
+    workspace: ${CURSOR_WORKSPACE:}
+    timeout-seconds: ${CURSOR_TIMEOUT_SECONDS:300}
+    login-timeout-seconds: ${CURSOR_LOGIN_TIMEOUT_SECONDS:600}
+  claude:
+    # Claude Code CLI（claude -p）本地修复。
+    enabled: ${CLAUDE_REPAIR_ENABLED:true}
+    executable: ${CLAUDE_CLI_EXECUTABLE:claude}
+    workspace: ${CLAUDE_WORKSPACE:}
+    timeout-seconds: ${CLAUDE_TIMEOUT_SECONDS:300}
+    # acceptEdits | bypassPermissions | default | dontAsk | auto
+    permission-mode: ${CLAUDE_PERMISSION_MODE:acceptEdits}
+    login-timeout-seconds: ${CLAUDE_LOGIN_TIMEOUT_SECONDS:600}
+  repair:
+    # 默认本地修复引擎：codex | cursor | claude；可在环境向导中切换并写入数据库。
+    engine: ${LOCAL_REPAIR_ENGINE:codex}
+  frontend:
+    # WEB_NPM 默认构建命令（仅允许 npm/pnpm/yarn）。
+    build-command: ${FRONTEND_BUILD_COMMAND:npm run build}
+    # UNI_APP 默认构建命令（可被任务级 clientVerifyCommand 覆盖）。
+    uniapp-build-command: ${FRONTEND_UNIAPP_BUILD_COMMAND:npm run build:mp-weixin}
+    timeout-seconds: ${FRONTEND_BUILD_TIMEOUT_SECONDS:600}
+  artifact:
+    # Maven package 超时；构建时会自动寻找 JDK 17+（避免平台进程 JAVA_HOME=8 导致 --release 失败）
+    timeout-seconds: ${ARTIFACT_TIMEOUT_SECONDS:900}
+    min-java-version: ${ARTIFACT_MIN_JAVA_VERSION:17}
+    # 可选：强制指定构建 JDK，例如 C:/Program Files/Java/jdk-17
+    java-home: ${ARTIFACT_JAVA_HOME:}

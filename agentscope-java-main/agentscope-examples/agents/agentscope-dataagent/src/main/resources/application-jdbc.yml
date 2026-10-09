@@ -1,0 +1,17 @@
+# External database connection details belong in the ignored private YAML file.
+spring:
+  datasource:
+    driver-class-name: ${DATAAGENT_DB_DRIVER:com.mysql.cj.jdbc.Driver}
+
+  jpa:
+    hibernate:
+      # 'update' is convenient for dev; production deployments should pin the
+      # schema via Flyway / Liquibase and switch this to 'validate'.
+      ddl-auto: ${DATAAGENT_JPA_DDL_AUTO:update}
+
+  # Disable the H2-only `data-h2.sql` seed when running against MySQL /
+  # PostgreSQL. The demo accounts (bob, alice) are a local-dev convenience
+  # and have no place in a production database.
+  sql:
+    init:
+      mode: never

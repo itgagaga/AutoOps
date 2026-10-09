@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zhiwei.superemployee.app.runtime.mapper.AgentSessionMapper">
+
+    <sql id="SessionColumns">
+        id, incident_id, agent_code, thread_id, status, objective, final_summary, error_message,
+        started_at, finished_at, created_at, updated_at, attempt_count, max_attempts, next_retry_at,
+        lease_owner, lease_until, last_heartbeat_at, failure_type, retryable, version
+    </sql>
+
+    <update id="markRunning">
+        UPDATE agent_session
+        SET status = 'RUNNING', started_at = COALESCE(started_at, #{now}), updated_at = #{now}
+        WHERE id = #{id}
+    </update>
+
+    <update id="tryAcquireLease">
+        UPDATE agent_session
+        SET lease_owner = #{owner}, lease_until = #{leaseUntil}, last_heartbeat_at = #{now}, version = version + 1
+        WHERE id = #{id} AND version = #{version}
+          AND (lease_until IS NULL OR lease_until &lt; #{now} OR lease_owner = #{owner})
+    </update>
+
+    <update id="beginAttempt">
+        UPDATE agent_session
+        SET status = 'RUNNING', started_at = COALESCE(started_at, #{now}), attempt_count = attempt_count + 1,
+            next_retry_at = NULL, error_message = NULL, failure_type = NULL, retryable = 0,
+            lease_until = #{leaseUntil}, last_heartbeat_at = #{now}, updated_at = #{now}
+        WHERE id = #{id} AND lease_owner = #{owner}
+    </update>
+
+    <update id="resumeWithLease">
+        UPDATE agent_session
+        SET status = 'RUNNING', next_retry_at = NULL, lease_until = #{leaseUntil},
+            last_heartbeat_at = #{now}, updated_at = #{now}
+        WHERE id = #{id} AND lease_owner = #{owner}
+    </update>
+
+    <update id="renewLease">
+        UPDATE agent_session
+        SET lease_until = #{leaseUntil}, last_heartbeat_at = #{now}, updated_at = #{now}
+        WHERE id = #{id} AND lease_owner = #{owner} AND status = 'RUNNING'
+    </update>
+
+    <update id="releaseLease">
+        UPDATE agent_session
+        SET lease_owner = NULL, lease_until = NULL, version = version + 1
+        WHERE id = #{id} AND lease_owner = #{owner}
+    </update>
+
+    <select id="selectRecoverable" resultType="com.zhiwei.superemployee.app.runtime.mapper.AgentSessionEntity">
+        SELECT <include refid="SessionColumns"/> FROM agent_session
+        WHERE (status = 'RUNNING' AND lease_until IS NOT NULL AND lease_until &lt; #{now})
+           OR (status = 'FAILED' AND retryable = 1 AND next_retry_at IS NOT NULL
+               AND next_retry_at &lt;= #{now} AND attempt_count &lt; max_attempts)
+        ORDER BY updated_at
+    </select>
+
+    <update id="scheduleRetry">
+        UPDATE agent_session
+        SET status = 'FAILED', error_message = #{error}, failure_type = #{failureType}, retryable = 1,
+            next_retry_at = #{nextRetryAt}, lease_owner = NULL, lease_until = NULL,
+            updated_at = #{now}, version = version + 1
+        WHERE id = #{id} AND lease_owner = #{owner}
+    </update>
+
+    <update id="finish">
+        UPDATE agent_session
+        SET status = #{status}, final_summary = #{summary}, error_message = #{error}, finished_at = #{now},
+            retryable = 0, next_retry_at = NULL, lease_owner = NULL, lease_until = NULL,
+            updated_at = #{now}, version = version + 1
+        WHERE id = #{id}
+    </update>
+
+    <update id="compareAndSetStatus">
+        UPDATE agent_session
+        SET status = #{newStatus}, updated_at = #{now}, version = version + 1
+        WHERE id = #{id} AND status = #{expectedStatus}
+    </update>
+
+    <update id="finishIfStatus">
+        UPDATE agent_session
+        SET status = #{status}, final_summary = #{summary}, error_message = #{error}, finished_at = #{now},
+            retryable = 0, next_retry_at = NULL, lease_owner = NULL, lease_until = NULL,
+            updated_at = #{now}, version = version + 1
+        WHERE id = #{id} AND status = #{expectedStatus}
+    </update>
+
+    <select id="countTurns" resultType="int">
+        SELECT COUNT(*) FROM agent_turn WHERE session_id = #{sessionId}
+    </select>
+
+    <insert id="insertTurn">
+        INSERT INTO agent_turn (id, session_id, turn_no, event_type, summary, created_at)
+        SELECT #{id}, #{sessionId},
+               COALESCE((SELECT MAX(turn_no) FROM agent_turn t WHERE t.session_id = #{sessionId}), 0) + 1,
+               #{eventType}, #{summary}, #{createdAt}
+        FROM dual
+    </insert>
+
+    <select id="selectTurns" resultType="java.util.HashMap">
+        SELECT id, session_id AS sessionId, turn_no AS turnNo, event_type AS eventType,
+               summary, created_at AS createdAt
+        FROM agent_turn WHERE session_id = #{sessionId} ORDER BY turn_no
+    </select>
+
+    <insert id="insertToolCall">
+        INSERT INTO agent_tool_call (id, session_id, tool_call_id, tool_code, arguments_json,
+            result_summary, status, duration_ms, started_at, finished_at)
+        VALUES (#{id}, #{sessionId}, #{toolCallId}, #{toolCode}, #{arguments},
+            #{result}, #{status}, #{durationMs}, #{startedAt}, #{finishedAt})
+    </insert>
+
+    <update id="finishToolCall">
+        UPDATE agent_tool_call
+        SET result_summary = #{result}, status = #{status}, duration_ms = #{durationMs}, finished_at = #{finishedAt}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countNonRetryableSince" resultType="int">
+        SELECT COUNT(*) FROM agent_tool_call
+        WHERE session_id = #{sessionId} AND started_at &gt;= #{startedAt}
+          AND tool_code IN
+        <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
+    </select>
+
+    <select id="countUnfinishedNonRetryable" resultType="int">
+        SELECT COUNT(*) FROM agent_tool_call
+        WHERE session_id = #{sessionId} AND status = 'STARTED'
+          AND tool_code IN
+        <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
+    </select>
+
+    <select id="statsByAgentCode" resultType="java.util.HashMap">
+        SELECT
+            SUM(CASE WHEN status IN ('CREATED','RUNNING','WAITING_APPROVAL','WAITING_INPUT') THEN 1 ELSE 0 END) AS activeCnt,
+            COUNT(*) AS totalCnt,
+            SUM(CASE WHEN status = 'SUCCEEDED' THEN 1 ELSE 0 END) AS successCnt,
+            SUM(CASE WHEN status IN ('FAILED','CANCELLED') THEN 1 ELSE 0 END) AS failedCnt
+        FROM agent_session WHERE agent_code = #{agentCode}
+    </select>
+
+    <select id="selectToolCalls" resultType="java.util.HashMap">
+        SELECT id, session_id AS sessionId, tool_call_id AS toolCallId, tool_code AS toolCode,
+               arguments_json AS argumentsJson, result_summary AS resultSummary, status,
+               duration_ms AS durationMs, started_at AS startedAt, finished_at AS finishedAt
+        FROM agent_tool_call WHERE session_id = #{sessionId} ORDER BY started_at
+    </select>
+</mapper>

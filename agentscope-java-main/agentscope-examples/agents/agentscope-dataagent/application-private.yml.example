@@ -1,0 +1,19 @@
+# Copy to local-config/application-private.yml in the process working directory.
+# Fill locally; never commit the private file or real values in this template.
+spring:
+  datasource:
+    url: ""
+    username: ""
+    password: ""
+dataagent:
+  jwt:
+    secret: ""
+  dashscope:
+    api-key: ""
+  session:
+    redis:
+      # Fill only when enabling Redis sessions.
+      host: ""
+      port: null
+      password: ""
+      database: null
